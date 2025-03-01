@@ -15,6 +15,7 @@ const Index = () => {
   const [emotionResult, setEmotionResult] = useState<EmotionResult | null>(null);
   const [isDetecting, setIsDetecting] = useState(false);
   const requestRef = useRef<number>();
+  const detectionActive = useRef<boolean>(false);
 
   // Load face detection models on component mount
   useEffect(() => {
@@ -42,6 +43,7 @@ const Index = () => {
       if (requestRef.current) {
         cancelAnimationFrame(requestRef.current);
       }
+      detectionActive.current = false;
     };
   }, []);
 
@@ -55,26 +57,37 @@ const Index = () => {
 
   // Start the emotion detection loop
   const startDetection = () => {
+    if (detectionActive.current) return; // Prevent multiple detection loops
+    
     setIsDetecting(true);
+    detectionActive.current = true;
     detectLoop();
   };
 
   // Animation loop for continuous detection
   const detectLoop = async () => {
+    if (!detectionActive.current) return; // Stop detection if not active
+    
     if (videoRef.current && !isModelLoading) {
-      // Only detect if video is playing
-      if (!videoRef.current.paused && !videoRef.current.ended) {
+      // Only detect if video is playing and visible
+      if (!videoRef.current.paused && !videoRef.current.ended && videoRef.current.readyState >= 2) {
         try {
           const result = await detectEmotion(videoRef.current);
-          setEmotionResult(result);
+          if (result) {
+            setEmotionResult(result);
+          }
         } catch (error) {
           console.error('Detection error:', error);
+          // Don't stop detection on error
         }
       }
     }
     
-    // Continue the loop
-    requestRef.current = requestAnimationFrame(detectLoop);
+    // Continue the loop with a small delay to prevent overwhelming the browser
+    requestRef.current = requestAnimationFrame(() => {
+      // Use setTimeout to throttle detection rate
+      setTimeout(detectLoop, 100);
+    });
   };
 
   return (
