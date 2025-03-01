@@ -8,9 +8,6 @@ import EmotionDisplay from '../components/EmotionDisplay';
 import { loadModels, detectEmotion, type EmotionResult } from '../lib/faceDetection';
 import { Loader2 } from 'lucide-react';
 
-// First, we need to add face-api.js to our project
-<lov-add-dependency>face-api.js@0.22.2</lov-add-dependency>
-
 const Index = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isModelLoading, setIsModelLoading] = useState(true);
@@ -24,11 +21,11 @@ const Index = () => {
     const initializeModels = async () => {
       setIsModelLoading(true);
       try {
-        // Create 'models' directory if not exists
         const modelsLoaded = await loadModels();
         if (!modelsLoaded) {
           throw new Error('Failed to load models');
         }
+        toast.success("Emotion detection models loaded successfully");
         setIsModelLoading(false);
       } catch (error) {
         console.error('Error initializing models:', error);

@@ -12,10 +12,19 @@ export interface EmotionResult {
 // Initialize face-api models
 export const loadModels = async () => {
   try {
+    // Create CDN URLs for models
+    const tinyFaceDetectorModelUrl = 'https://justadudewhohacks.github.io/face-api.js/models/tiny_face_detector_model-weights_manifest.json';
+    const faceExpressionModelUrl = 'https://justadudewhohacks.github.io/face-api.js/models/face_expression_model-weights_manifest.json';
+    
+    console.log('Loading models from CDN...');
+    
+    // Load models from CDN instead of local files
     await Promise.all([
-      faceapi.nets.tinyFaceDetector.loadFromUri('/models'),
-      faceapi.nets.faceExpressionNet.loadFromUri('/models')
+      faceapi.nets.tinyFaceDetector.loadFromUri(tinyFaceDetectorModelUrl.substring(0, tinyFaceDetectorModelUrl.lastIndexOf('/'))),
+      faceapi.nets.faceExpressionNet.loadFromUri(faceExpressionModelUrl.substring(0, faceExpressionModelUrl.lastIndexOf('/')))
     ]);
+    
+    console.log('Models loaded successfully!');
     return true;
   } catch (error) {
     console.error('Error loading face detection models:', error);
