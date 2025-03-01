@@ -82,10 +82,13 @@
   }
 
   body {
-    @apply bg-background text-foreground;
-    font-feature-settings: "ss01" on, "ss02" on, "ss03" on, "ss04" on;
+    @apply bg-background text-foreground font-sans;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-heading;
   }
 
   /* Custom scrollbar */

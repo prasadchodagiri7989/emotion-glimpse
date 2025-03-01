@@ -1,4 +1,3 @@
-
 import React, { useRef, useState, useEffect } from 'react';
 import { toast } from "sonner";
 import Header from '../components/Header';
@@ -18,7 +17,6 @@ const Index = () => {
   const detectionActive = useRef<boolean>(false);
   const streamRef = useRef<MediaStream | null>(null);
 
-  // Load face detection models on component mount
   useEffect(() => {
     const initializeModels = async () => {
       setIsModelLoading(true);
@@ -40,45 +38,37 @@ const Index = () => {
     initializeModels();
 
     return () => {
-      // Clean up any animation frames
       if (requestRef.current) {
         cancelAnimationFrame(requestRef.current);
       }
       detectionActive.current = false;
       
-      // Stop all tracks when component unmounts
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(track => track.stop());
       }
     };
   }, []);
 
-  // Handle when camera stream is ready
   const handleStreamReady = (stream: MediaStream) => {
-    // Store stream reference for cleanup
     streamRef.current = stream;
     
-    // Once stream is ready and models are loaded, start detection loop
     if (!isModelLoading && !modelLoadError) {
       startDetection();
     }
   };
 
-  // Start the emotion detection loop
   const startDetection = () => {
-    if (detectionActive.current) return; // Prevent multiple detection loops
+    if (detectionActive.current) return;
     
     setIsDetecting(true);
     detectionActive.current = true;
     detectLoop();
   };
 
-  // Animation loop for continuous detection
   const detectLoop = async () => {
-    if (!detectionActive.current) return; // Stop detection if not active
+    if (!detectionActive.current) return;
     
     if (videoRef.current && !isModelLoading) {
-      // Only detect if video is playing and visible
       if (!videoRef.current.paused && !videoRef.current.ended && videoRef.current.readyState >= 2) {
         try {
           const result = await detectEmotion(videoRef.current);
@@ -87,20 +77,17 @@ const Index = () => {
           }
         } catch (error) {
           console.error('Detection error:', error);
-          // Don't stop detection on error
         }
       }
     }
     
-    // Continue the loop with a small delay to prevent overwhelming the browser
     requestRef.current = requestAnimationFrame(() => {
-      // Use setTimeout to throttle detection rate
-      setTimeout(detectLoop, 200); // Increased throttle time to reduce load
+      setTimeout(detectLoop, 200);
     });
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className="min-h-screen flex flex-col bg-background font-sans">
       <Header />
       
       <main className="flex-1 flex flex-col items-center justify-center py-10 px-4 sm:px-6">
@@ -111,7 +98,7 @@ const Index = () => {
                 Real-time Analysis
               </span>
             </div>
-            <h1 className="text-3xl md:text-4xl font-medium tracking-tight mb-2">
+            <h1 className="text-3xl md:text-4xl font-medium tracking-tight mb-2 font-heading">
               Recognize Emotions Instantly
             </h1>
             <p className="text-muted-foreground text-sm sm:text-base max-w-xl mx-auto">
@@ -130,7 +117,7 @@ const Index = () => {
           ) : modelLoadError ? (
             <div className="w-full max-w-3xl aspect-video mx-auto bg-black/5 rounded-2xl flex items-center justify-center">
               <div className="text-center p-6">
-                <p className="text-lg font-medium mb-2">Failed to load emotion detection models</p>
+                <p className="text-lg font-medium font-heading mb-2">Failed to load emotion detection models</p>
                 <p className="text-sm text-muted-foreground mb-4">
                   There was an error initializing the face detection models.
                 </p>
