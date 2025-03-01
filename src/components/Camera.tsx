@@ -10,11 +10,15 @@ interface CameraProps {
 const Camera: React.FC<CameraProps> = ({ onStreamReady, videoRef }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const streamInitialized = useRef(false);
 
   useEffect(() => {
     let stream: MediaStream;
 
     const setupCamera = async () => {
+      // Prevent re-initializing the camera if it's already set up
+      if (streamInitialized.current) return;
+      
       try {
         setIsLoading(true);
         stream = await navigator.mediaDevices.getUserMedia({
@@ -33,6 +37,7 @@ const Camera: React.FC<CameraProps> = ({ onStreamReady, videoRef }) => {
               videoRef.current.play()
                 .then(() => {
                   setIsLoading(false);
+                  streamInitialized.current = true;
                   onStreamReady(stream);
                 })
                 .catch(err => {
@@ -53,9 +58,7 @@ const Camera: React.FC<CameraProps> = ({ onStreamReady, videoRef }) => {
     setupCamera();
 
     return () => {
-      if (stream) {
-        stream.getTracks().forEach(track => track.stop());
-      }
+      // No need to clean up stream here as it's handled in the parent component
     };
   }, [onStreamReady, videoRef]);
 

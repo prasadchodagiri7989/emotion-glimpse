@@ -16,6 +16,7 @@ const Index = () => {
   const [isDetecting, setIsDetecting] = useState(false);
   const requestRef = useRef<number>();
   const detectionActive = useRef<boolean>(false);
+  const streamRef = useRef<MediaStream | null>(null);
 
   // Load face detection models on component mount
   useEffect(() => {
@@ -44,11 +45,19 @@ const Index = () => {
         cancelAnimationFrame(requestRef.current);
       }
       detectionActive.current = false;
+      
+      // Stop all tracks when component unmounts
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+      }
     };
   }, []);
 
   // Handle when camera stream is ready
   const handleStreamReady = (stream: MediaStream) => {
+    // Store stream reference for cleanup
+    streamRef.current = stream;
+    
     // Once stream is ready and models are loaded, start detection loop
     if (!isModelLoading && !modelLoadError) {
       startDetection();
@@ -86,7 +95,7 @@ const Index = () => {
     // Continue the loop with a small delay to prevent overwhelming the browser
     requestRef.current = requestAnimationFrame(() => {
       // Use setTimeout to throttle detection rate
-      setTimeout(detectLoop, 100);
+      setTimeout(detectLoop, 200); // Increased throttle time to reduce load
     });
   };
 
