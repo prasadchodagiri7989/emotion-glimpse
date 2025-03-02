@@ -415,6 +415,18 @@ const TextEmotion: React.FC = () => {
         title: "Analysis complete",
         description: `Text analyzed successfully`,
       });
+      
+      // Show a warning popup when emotion detected is "fearful"
+      if (maxEmotion === 'fearful') {
+        setTimeout(() => {
+          toast({
+            title: "⚠️ Suspicious Content Detected",
+            description: "This message contains concerning language that may indicate suspicious activity or threat.",
+            variant: "destructive",
+            duration: 6000,
+          });
+        }, 1000); // Small delay for better UX (show after the analysis complete message)
+      }
     } catch (error) {
       console.error('Error detecting emotion:', error);
       toast({
