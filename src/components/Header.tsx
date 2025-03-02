@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Camera, Mic } from 'lucide-react';
+import { Camera, Mic, MessageCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const Header: React.FC = () => {
@@ -18,6 +18,10 @@ const Header: React.FC = () => {
         <Link to="/audio-emotion" className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center">
           <Mic className="w-4 h-4 mr-1" />
           <span className="hidden sm:inline">Audio</span>
+        </Link>
+        <Link to="/text-emotion" className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center">
+          <MessageCircle className="w-4 h-4 mr-1" />
+          <span className="hidden sm:inline">Text</span>
         </Link>
         <div className="hidden sm:flex items-center space-x-6">
           <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">

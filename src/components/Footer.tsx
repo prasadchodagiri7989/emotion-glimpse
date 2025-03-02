@@ -16,6 +16,9 @@ const Footer: React.FC = () => {
           <Link to="/audio-emotion" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
             Audio
           </Link>
+          <Link to="/text-emotion" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+            Text
+          </Link>
           <a href="#" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
             About
           </a>
