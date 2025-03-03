@@ -1,4 +1,3 @@
-
 import React, { useRef, useState, useEffect } from 'react';
 import { toast } from "sonner";
 import Header from '../components/Header';
@@ -20,7 +19,6 @@ const Index = () => {
   const detectionActive = useRef<boolean>(false);
   const streamRef = useRef<MediaStream | null>(null);
 
-  // Watch for fearful emotion detection and show dialog
   useEffect(() => {
     if (emotionResult?.emotion === 'fearful') {
       setShowSuspiciousDialog(true);
@@ -101,7 +99,6 @@ const Index = () => {
       <Header />
       
       <main className="flex-1 flex flex-col items-center justify-center py-10 px-4 sm:px-6">
-        {/* Suspicious Content Dialog */}
         <SuspiciousCommand 
           open={showSuspiciousDialog}
           onOpenChange={setShowSuspiciousDialog}

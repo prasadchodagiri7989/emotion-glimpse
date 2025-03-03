@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Mic, Square, Play, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -26,7 +25,6 @@ const AudioEmotion: React.FC = () => {
   const audioChunksRef = useRef<BlobPart[]>([]);
   const { toast } = useToast();
 
-  // Watch for fearful emotion detection and show dialog
   useEffect(() => {
     if (emotionResult?.emotion === 'fearful') {
       setShowSuspiciousDialog(true);
@@ -55,7 +53,6 @@ const AudioEmotion: React.FC = () => {
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
         setAudioBlob(audioBlob);
         
-        // Clean up stream tracks after recording
         stream.getTracks().forEach(track => track.stop());
       };
       
@@ -93,12 +90,10 @@ const AudioEmotion: React.FC = () => {
     
     setIsProcessing(true);
     
-    // Simulate emotion detection with random result
-    // In a real app, you would send the audio to an API for analysis
     setTimeout(() => {
       const emotions: AudioEmotion[] = ['happy', 'sad', 'angry', 'fearful', 'disgusted', 'surprised', 'neutral'];
       const randomEmotion = emotions[Math.floor(Math.random() * emotions.length)];
-      const randomProbability = Math.random() * 0.5 + 0.5; // Between 0.5 and 1.0
+      const randomProbability = Math.random() * 0.5 + 0.5;
       
       setEmotionResult({
         emotion: randomEmotion,
@@ -120,7 +115,6 @@ const AudioEmotion: React.FC = () => {
       
       <main className="flex-1 container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
-          {/* Suspicious Content Dialog */}
           <SuspiciousCommand 
             open={showSuspiciousDialog} 
             onOpenChange={setShowSuspiciousDialog} 
