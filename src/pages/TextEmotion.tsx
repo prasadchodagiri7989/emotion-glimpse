@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -5,6 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import Layout from '@/components/Layout';
 import TextEmotionDisplay from '@/components/TextEmotionDisplay';
+import SuspiciousCommand from '@/components/SuspiciousCommand';
 
 type Emotion = 'happy' | 'sad' | 'angry' | 'surprised' | 'fearful' | 'disgusted' | 'neutral';
 
@@ -481,6 +483,9 @@ const TextEmotion: React.FC = () => {
             </Button>
           </div>
         </div>
+
+        {/* Add the Suspicious Command component in the middle */}
+        <SuspiciousCommand />
 
         <TextEmotionDisplay emotionResult={emotionResult} />
       </div>
