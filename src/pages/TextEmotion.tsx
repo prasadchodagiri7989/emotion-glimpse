@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -380,6 +379,7 @@ const TextEmotion: React.FC = () => {
         emotionScores.neutral = 0.02;
       }
       
+      // Get the highest scoring emotion
       let maxEmotion: Emotion = 'neutral';
       let maxScore = emotionScores.neutral;
       
