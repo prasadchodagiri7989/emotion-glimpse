@@ -6,6 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 import Footer from '@/components/Footer';
 import Header from '@/components/Header';
 import AudioEmotionDisplay from '@/components/AudioEmotionDisplay';
+import SuspiciousCommand from '@/components/SuspiciousCommand';
 
 type AudioEmotion = 'happy' | 'sad' | 'angry' | 'fearful' | 'disgusted' | 'surprised' | 'neutral';
 
@@ -20,9 +21,17 @@ const AudioEmotion: React.FC = () => {
   const [emotionResult, setEmotionResult] = useState<AudioEmotionResult | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showSuspiciousDialog, setShowSuspiciousDialog] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<BlobPart[]>([]);
   const { toast } = useToast();
+
+  // Watch for fearful emotion detection and show dialog
+  useEffect(() => {
+    if (emotionResult?.emotion === 'fearful') {
+      setShowSuspiciousDialog(true);
+    }
+  }, [emotionResult]);
 
   const startRecording = async () => {
     try {
@@ -111,6 +120,12 @@ const AudioEmotion: React.FC = () => {
       
       <main className="flex-1 container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
+          {/* Suspicious Content Dialog */}
+          <SuspiciousCommand 
+            open={showSuspiciousDialog} 
+            onOpenChange={setShowSuspiciousDialog} 
+          />
+          
           <div className="text-center mb-10">
             <h1 className="text-3xl font-bold mb-4">Audio Emotion Detection</h1>
             <p className="text-muted-foreground max-w-xl mx-auto">

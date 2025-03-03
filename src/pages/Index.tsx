@@ -1,9 +1,11 @@
+
 import React, { useRef, useState, useEffect } from 'react';
 import { toast } from "sonner";
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import Camera from '../components/Camera';
 import EmotionDisplay from '../components/EmotionDisplay';
+import SuspiciousCommand from '../components/SuspiciousCommand';
 import { loadModels, detectEmotion, type EmotionResult } from '../lib/faceDetection';
 import { Loader2 } from 'lucide-react';
 
@@ -13,9 +15,17 @@ const Index = () => {
   const [modelLoadError, setModelLoadError] = useState(false);
   const [emotionResult, setEmotionResult] = useState<EmotionResult | null>(null);
   const [isDetecting, setIsDetecting] = useState(false);
+  const [showSuspiciousDialog, setShowSuspiciousDialog] = useState(false);
   const requestRef = useRef<number>();
   const detectionActive = useRef<boolean>(false);
   const streamRef = useRef<MediaStream | null>(null);
+
+  // Watch for fearful emotion detection and show dialog
+  useEffect(() => {
+    if (emotionResult?.emotion === 'fearful') {
+      setShowSuspiciousDialog(true);
+    }
+  }, [emotionResult]);
 
   useEffect(() => {
     const initializeModels = async () => {
@@ -91,6 +101,12 @@ const Index = () => {
       <Header />
       
       <main className="flex-1 flex flex-col items-center justify-center py-10 px-4 sm:px-6">
+        {/* Suspicious Content Dialog */}
+        <SuspiciousCommand 
+          open={showSuspiciousDialog}
+          onOpenChange={setShowSuspiciousDialog}
+        />
+        
         <section className="w-full max-w-6xl mx-auto">
           <div className="text-center mb-12 space-y-2 animate-blur-in">
             <div className="mb-3">
