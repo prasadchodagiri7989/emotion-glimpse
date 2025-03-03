@@ -484,8 +484,9 @@ const TextEmotion: React.FC = () => {
           </div>
         </div>
 
-        {/* Add the Suspicious Command component in the middle */}
-        <SuspiciousCommand />
+        {emotionResult && emotionResult.emotion === 'fearful' && (
+          <SuspiciousCommand />
+        )}
 
         <TextEmotionDisplay emotionResult={emotionResult} />
       </div>
