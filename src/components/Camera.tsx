@@ -1,5 +1,5 @@
 
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { Upload, Play } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
@@ -11,7 +11,15 @@ interface CameraProps {
 
 const Camera: React.FC<CameraProps> = ({ onVideoProcess, videoRef }) => {
   const [isLoading, setIsLoading] = useState(false);
+  const [videoLoaded, setVideoLoaded] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    // Check if video is already loaded when component mounts
+    if (videoRef.current?.src) {
+      setVideoLoaded(true);
+    }
+  }, [videoRef]);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -23,13 +31,14 @@ const Camera: React.FC<CameraProps> = ({ onVideoProcess, videoRef }) => {
       return;
     }
 
-    setIsLoading(false);
+    setIsLoading(true);
     const videoUrl = URL.createObjectURL(file);
 
     if (videoRef.current) {
       videoRef.current.src = videoUrl;
       videoRef.current.onloadeddata = () => {
         setIsLoading(false);
+        setVideoLoaded(true);
         toast.success('Video loaded successfully');
       };
     }
@@ -62,7 +71,7 @@ const Camera: React.FC<CameraProps> = ({ onVideoProcess, videoRef }) => {
           onChange={handleFileChange}
         />
 
-        {!videoRef.current?.src && (
+        {!videoLoaded && (
           <div className="absolute inset-0 flex flex-col items-center justify-center">
             <Button
               variant="outline"
@@ -89,7 +98,7 @@ const Camera: React.FC<CameraProps> = ({ onVideoProcess, videoRef }) => {
         )}
       </div>
       
-      {videoRef.current?.src && !isLoading && (
+      {videoLoaded && !isLoading && (
         <div className="mt-4 flex justify-center">
           <Button 
             onClick={handleAnalyze}
