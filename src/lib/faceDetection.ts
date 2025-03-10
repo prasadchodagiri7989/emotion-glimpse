@@ -12,16 +12,15 @@ export interface EmotionResult {
 // Initialize face-api models
 export const loadModels = async () => {
   try {
-    // Create CDN URLs for models
-    const tinyFaceDetectorModelUrl = 'https://justadudewhohacks.github.io/face-api.js/models/tiny_face_detector_model-weights_manifest.json';
-    const faceExpressionModelUrl = 'https://justadudewhohacks.github.io/face-api.js/models/face_expression_model-weights_manifest.json';
+    // Create model URLs
+    const modelUrl = '/models';
     
     console.log('Loading models from CDN...');
     
-    // Load models from CDN instead of local files
+    // Load models
     await Promise.all([
-      faceapi.nets.tinyFaceDetector.loadFromUri(tinyFaceDetectorModelUrl.substring(0, tinyFaceDetectorModelUrl.lastIndexOf('/'))),
-      faceapi.nets.faceExpressionNet.loadFromUri(faceExpressionModelUrl.substring(0, faceExpressionModelUrl.lastIndexOf('/')))
+      faceapi.nets.tinyFaceDetector.loadFromUri(modelUrl),
+      faceapi.nets.faceExpressionNet.loadFromUri(modelUrl)
     ]);
     
     console.log('Models loaded successfully!');
@@ -39,12 +38,20 @@ export const detectEmotion = async (
   if (!videoEl || videoEl.paused || videoEl.ended) return null;
 
   try {
+    console.log("Detecting face...");
+    // Try using a larger minSize for better detection
+    const options = new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.3 });
+    
     const detection = await faceapi
-      .detectSingleFace(videoEl, new faceapi.TinyFaceDetectorOptions())
+      .detectSingleFace(videoEl, options)
       .withFaceExpressions();
 
-    if (!detection) return null;
-
+    if (!detection) {
+      console.log("No face detected in this frame");
+      return null;
+    }
+    
+    console.log("Face detected! Expressions:", detection.expressions);
     const expressions = detection.expressions;
     
     // Get the emotion with highest probability

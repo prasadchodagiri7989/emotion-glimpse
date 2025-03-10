@@ -51,15 +51,19 @@ const Index = () => {
     console.log("Video duration:", duration);
     const interval = 0.5; // seconds
     let currentTime = 0;
+    let framesProcessed = 0;
+    let detectedFrames = 0;
 
     try {
       console.log("Starting video analysis...");
+      video.pause(); // Ensure video is paused before analysis
       
+      // Process frames
       while (currentTime < duration) {
         console.log(`Processing frame at ${currentTime}s`);
-        video.currentTime = currentTime;
         
-        // Wait for the frame to be ready
+        // Set current time and wait for seeked event
+        video.currentTime = currentTime;
         await new Promise<void>(resolve => {
           const seekedHandler = () => {
             video.removeEventListener('seeked', seekedHandler);
@@ -69,10 +73,15 @@ const Index = () => {
         });
 
         try {
+          framesProcessed++;
+          // Give a brief moment for the frame to fully render
+          await new Promise(r => setTimeout(r, 100));
+          
           const result = await detectEmotion(video);
           console.log("Frame result:", result);
           
           if (result) {
+            detectedFrames++;
             emotionCounts[result.emotion] = (emotionCounts[result.emotion] || 0) + 1;
             
             if (result.emotion === 'fearful') {
@@ -87,34 +96,51 @@ const Index = () => {
       }
 
       console.log("Analysis complete. Emotion counts:", emotionCounts);
+      console.log(`Frames processed: ${framesProcessed}, Faces detected: ${detectedFrames}`);
       
-      // Find the most frequent emotion
-      let maxCount = 0;
-      let dominantEmotion: EmotionResult | null = null;
-
-      Object.entries(emotionCounts).forEach(([emotion, count]) => {
-        if (count > maxCount) {
-          maxCount = count;
-          dominantEmotion = {
-            emotion: emotion as EmotionResult['emotion'],
-            probability: count / (duration / interval)
-          };
-        }
-      });
-
-      console.log("Dominant emotion:", dominantEmotion);
-      setEmotionResult(dominantEmotion);
-      
-      if (dominantEmotion) {
-        toast.success(`Analysis complete: Dominant emotion is ${dominantEmotion.emotion}`);
+      // If no emotions were detected, set a default neutral emotion with low confidence
+      if (Object.keys(emotionCounts).length === 0) {
+        toast.warning('No faces detected in the video. Try a video with clearer face visibility.');
+        setEmotionResult({
+          emotion: 'neutral',
+          probability: 0.3
+        });
       } else {
-        toast.warning('No emotions detected in the video');
+        // Find the most frequent emotion
+        let maxCount = 0;
+        let dominantEmotion: EmotionResult | null = null;
+
+        Object.entries(emotionCounts).forEach(([emotion, count]) => {
+          if (count > maxCount) {
+            maxCount = count;
+            dominantEmotion = {
+              emotion: emotion as EmotionResult['emotion'],
+              probability: count / (detectedFrames || 1)
+            };
+          }
+        });
+
+        console.log("Dominant emotion:", dominantEmotion);
+        setEmotionResult(dominantEmotion);
+        
+        if (dominantEmotion) {
+          toast.success(`Analysis complete: Dominant emotion is ${dominantEmotion.emotion}`);
+        }
       }
     } catch (error) {
       console.error('Error during video analysis:', error);
       toast.error('Failed to analyze video');
+      // Fallback to neutral emotion
+      setEmotionResult({
+        emotion: 'neutral',
+        probability: 0.3
+      });
     } finally {
       setIsAnalyzing(false);
+      // Reset video to beginning after analysis
+      if (videoRef.current) {
+        videoRef.current.currentTime = 0;
+      }
     }
   };
 
