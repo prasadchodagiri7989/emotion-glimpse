@@ -42,6 +42,7 @@ const Index = () => {
     if (!video || isModelLoading) return;
 
     setIsAnalyzing(true);
+    setEmotionResult(null);
     const emotionCounts: Record<string, number> = {};
     
     // Sample frames every 500ms during video duration
@@ -49,47 +50,57 @@ const Index = () => {
     const interval = 0.5; // seconds
     let currentTime = 0;
 
-    while (currentTime < duration) {
-      video.currentTime = currentTime;
-      
-      // Wait for the frame to be ready
-      await new Promise(resolve => {
-        video.onseeked = resolve;
+    try {
+      while (currentTime < duration) {
+        video.currentTime = currentTime;
+        
+        // Wait for the frame to be ready
+        await new Promise(resolve => {
+          video.onseeked = resolve;
+        });
+
+        try {
+          const result = await detectEmotion(video);
+          if (result) {
+            emotionCounts[result.emotion] = (emotionCounts[result.emotion] || 0) + 1;
+            
+            if (result.emotion === 'fearful') {
+              setShowSuspiciousDialog(true);
+            }
+          }
+        } catch (error) {
+          console.error('Error analyzing frame:', error);
+        }
+
+        currentTime += interval;
+      }
+
+      // Find the most frequent emotion
+      let maxCount = 0;
+      let dominantEmotion: EmotionResult | null = null;
+
+      Object.entries(emotionCounts).forEach(([emotion, count]) => {
+        if (count > maxCount) {
+          maxCount = count;
+          dominantEmotion = {
+            emotion: emotion as EmotionResult['emotion'],
+            probability: count / (duration / interval)
+          };
+        }
       });
 
-      try {
-        const result = await detectEmotion(video);
-        if (result) {
-          emotionCounts[result.emotion] = (emotionCounts[result.emotion] || 0) + 1;
-          
-          if (result.emotion === 'fearful') {
-            setShowSuspiciousDialog(true);
-          }
-        }
-      } catch (error) {
-        console.error('Error analyzing frame:', error);
+      setEmotionResult(dominantEmotion);
+      if (dominantEmotion) {
+        toast.success(`Analysis complete: Dominant emotion is ${dominantEmotion.emotion}`);
+      } else {
+        toast.warning('No emotions detected in the video');
       }
-
-      currentTime += interval;
+    } catch (error) {
+      console.error('Error during video analysis:', error);
+      toast.error('Failed to analyze video');
+    } finally {
+      setIsAnalyzing(false);
     }
-
-    // Find the most frequent emotion
-    let maxCount = 0;
-    let dominantEmotion: EmotionResult | null = null;
-
-    Object.entries(emotionCounts).forEach(([emotion, count]) => {
-      if (count > maxCount) {
-        maxCount = count;
-        dominantEmotion = {
-          emotion: emotion as EmotionResult['emotion'],
-          probability: count / (duration / interval)
-        };
-      }
-    });
-
-    setEmotionResult(dominantEmotion);
-    setIsAnalyzing(false);
-    toast.success('Video analysis complete');
   };
 
   return (
@@ -113,7 +124,7 @@ const Index = () => {
               Analyze Video Emotions
             </h1>
             <p className="text-muted-foreground text-sm sm:text-base max-w-xl mx-auto">
-              Upload a video to analyze emotions throughout its duration and determine the most prevalent emotion.
+              Upload a video and click the Analyze button to determine the most prevalent emotion.
             </p>
           </div>
 
@@ -144,8 +155,10 @@ const Index = () => {
               <Camera onVideoProcess={analyzeVideo} videoRef={videoRef} />
               {isAnalyzing && (
                 <div className="mt-6 text-center">
-                  <Loader2 className="w-6 h-6 animate-spin inline-block mr-2" />
-                  <span>Analyzing video...</span>
+                  <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 text-primary rounded-full">
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <span>Analyzing video...</span>
+                  </div>
                 </div>
               )}
             </>

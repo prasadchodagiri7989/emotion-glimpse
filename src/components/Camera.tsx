@@ -1,6 +1,6 @@
 
 import React, { useRef, useState } from 'react';
-import { Upload } from 'lucide-react';
+import { Upload, Play } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
@@ -23,16 +23,26 @@ const Camera: React.FC<CameraProps> = ({ onVideoProcess, videoRef }) => {
       return;
     }
 
-    setIsLoading(true);
+    setIsLoading(false);
     const videoUrl = URL.createObjectURL(file);
 
     if (videoRef.current) {
       videoRef.current.src = videoUrl;
       videoRef.current.onloadeddata = () => {
         setIsLoading(false);
-        onVideoProcess(videoRef.current!);
+        toast.success('Video loaded successfully');
       };
     }
+  };
+
+  const handleAnalyze = () => {
+    if (!videoRef.current?.src) {
+      toast.error('Please upload a video first');
+      return;
+    }
+    
+    setIsLoading(true);
+    onVideoProcess(videoRef.current);
   };
 
   return (
@@ -78,6 +88,19 @@ const Camera: React.FC<CameraProps> = ({ onVideoProcess, videoRef }) => {
           </div>
         )}
       </div>
+      
+      {videoRef.current?.src && !isLoading && (
+        <div className="mt-4 flex justify-center">
+          <Button 
+            onClick={handleAnalyze}
+            className="gap-2"
+            size="lg"
+          >
+            <Play className="w-5 h-5" />
+            Analyze Emotions
+          </Button>
+        </div>
+      )}
     </div>
   );
 };
