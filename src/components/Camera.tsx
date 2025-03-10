@@ -51,6 +51,7 @@ const Camera: React.FC<CameraProps> = ({ onVideoProcess, videoRef }) => {
     }
     
     setIsLoading(true);
+    // Call the onVideoProcess function with the video element
     onVideoProcess(videoRef.current);
   };
 

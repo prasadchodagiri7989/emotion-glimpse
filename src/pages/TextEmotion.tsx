@@ -1,3 +1,4 @@
+
 import React, { useRef, useState, useEffect } from 'react';
 import { toast } from "sonner";
 import Header from '../components/Header';
@@ -5,10 +6,10 @@ import Footer from '../components/Footer';
 import Camera from '../components/Camera';
 import EmotionDisplay from '../components/EmotionDisplay';
 import SuspiciousCommand from '../components/SuspiciousCommand';
-import { loadModels, detectEmotion, type EmotionResult, type Emotion } from '../lib/faceDetection';
+import { loadModels, detectEmotion, type EmotionResult } from '../lib/faceDetection';
 import { Loader2 } from 'lucide-react';
 
-const Index = () => {
+const TextEmotion = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isModelLoading, setIsModelLoading] = useState(true);
   const [modelLoadError, setModelLoadError] = useState(false);
@@ -24,6 +25,7 @@ const Index = () => {
         if (!modelsLoaded) {
           throw new Error('Failed to load models');
         }
+        console.log("Emotion detection models loaded successfully");
         toast.success("Emotion detection models loaded successfully");
         setIsModelLoading(false);
       } catch (error) {
@@ -46,24 +48,34 @@ const Index = () => {
     
     // Sample frames every 500ms during video duration
     const duration = video.duration;
+    console.log("Video duration:", duration);
     const interval = 0.5; // seconds
     let currentTime = 0;
 
     try {
+      console.log("Starting video analysis...");
+      
       while (currentTime < duration) {
+        console.log(`Processing frame at ${currentTime}s`);
         video.currentTime = currentTime;
         
         // Wait for the frame to be ready
-        await new Promise(resolve => {
-          video.onseeked = resolve;
+        await new Promise<void>(resolve => {
+          const seekedHandler = () => {
+            video.removeEventListener('seeked', seekedHandler);
+            resolve();
+          };
+          video.addEventListener('seeked', seekedHandler);
         });
 
         try {
           const result = await detectEmotion(video);
+          console.log("Frame result:", result);
+          
           if (result) {
             emotionCounts[result.emotion] = (emotionCounts[result.emotion] || 0) + 1;
             
-            if (result.emotion === 'fearful' as Emotion) {
+            if (result.emotion === 'fearful') {
               setShowSuspiciousDialog(true);
             }
           }
@@ -74,6 +86,8 @@ const Index = () => {
         currentTime += interval;
       }
 
+      console.log("Analysis complete. Emotion counts:", emotionCounts);
+      
       // Find the most frequent emotion
       let maxCount = 0;
       let dominantEmotion: EmotionResult | null = null;
@@ -88,7 +102,9 @@ const Index = () => {
         }
       });
 
+      console.log("Dominant emotion:", dominantEmotion);
       setEmotionResult(dominantEmotion);
+      
       if (dominantEmotion) {
         toast.success(`Analysis complete: Dominant emotion is ${dominantEmotion.emotion}`);
       } else {
@@ -174,4 +190,4 @@ const Index = () => {
   );
 };
 
-export default Index;
+export default TextEmotion;
