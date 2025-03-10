@@ -1,105 +1,83 @@
 
-import React, { useRef, useEffect, useState } from 'react';
-import { Camera as CameraIcon } from 'lucide-react';
+import React, { useRef, useState } from 'react';
+import { Upload } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 
 interface CameraProps {
-  onStreamReady: (stream: MediaStream) => void;
+  onVideoProcess: (video: HTMLVideoElement) => void;
   videoRef: React.RefObject<HTMLVideoElement>;
 }
 
-const Camera: React.FC<CameraProps> = ({ onStreamReady, videoRef }) => {
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const streamInitialized = useRef(false);
+const Camera: React.FC<CameraProps> = ({ onVideoProcess, videoRef }) => {
+  const [isLoading, setIsLoading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    let stream: MediaStream;
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
 
-    const setupCamera = async () => {
-      // Prevent re-initializing the camera if it's already set up
-      if (streamInitialized.current) return;
-      
-      try {
-        setIsLoading(true);
-        stream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            width: { ideal: 1280 },
-            height: { ideal: 720 },
-            facingMode: 'user'
-          },
-          audio: false
-        });
+    // Check if the file is a video
+    if (!file.type.startsWith('video/')) {
+      toast.error('Please upload a video file');
+      return;
+    }
 
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          videoRef.current.onloadedmetadata = () => {
-            if (videoRef.current) {
-              videoRef.current.play()
-                .then(() => {
-                  setIsLoading(false);
-                  streamInitialized.current = true;
-                  onStreamReady(stream);
-                })
-                .catch(err => {
-                  console.error('Error playing video:', err);
-                  setError('Could not start video playback');
-                  setIsLoading(false);
-                });
-            }
-          };
-        }
-      } catch (err) {
-        console.error('Error accessing camera:', err);
-        setError('Camera access denied or not available');
+    setIsLoading(true);
+    const videoUrl = URL.createObjectURL(file);
+
+    if (videoRef.current) {
+      videoRef.current.src = videoUrl;
+      videoRef.current.onloadeddata = () => {
         setIsLoading(false);
-      }
-    };
-
-    setupCamera();
-
-    return () => {
-      // No need to clean up stream here as it's handled in the parent component
-    };
-  }, [onStreamReady, videoRef]);
+        onVideoProcess(videoRef.current!);
+      };
+    }
+  };
 
   return (
-    <div className="camera-container w-full max-w-3xl aspect-video mx-auto">
-      <video 
-        ref={videoRef}
-        className={`w-full h-full object-cover transition-opacity duration-500 ${isLoading ? 'opacity-0' : 'opacity-100'}`}
-        playsInline
-        muted
-      />
-      
-      {isLoading && (
-        <div className="camera-overlay">
-          <div className="flex flex-col items-center justify-center text-white">
-            <CameraIcon className="w-10 h-10 mb-4 animate-pulse" />
-            <p className="text-lg font-medium">Starting camera...</p>
-          </div>
-        </div>
-      )}
-      
-      {error && (
-        <div className="camera-overlay bg-black/80">
-          <div className="text-center px-6">
-            <p className="text-white text-lg mb-2">Camera Error</p>
-            <p className="text-white/80 text-sm mb-4">{error}</p>
-            <button 
-              className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors"
-              onClick={() => window.location.reload()}
+    <div className="camera-container w-full max-w-3xl mx-auto">
+      <div className="relative aspect-video bg-black/5 rounded-2xl overflow-hidden">
+        <video 
+          ref={videoRef}
+          className="w-full h-full object-contain"
+          controls
+        />
+        
+        <input
+          type="file"
+          accept="video/*"
+          className="hidden"
+          ref={fileInputRef}
+          onChange={handleFileChange}
+        />
+
+        {!videoRef.current?.src && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <Button
+              variant="outline"
+              size="lg"
+              className="gap-2"
+              onClick={() => fileInputRef.current?.click()}
             >
-              Retry
-            </button>
+              <Upload className="w-5 h-5" />
+              Upload Video
+            </Button>
+            <p className="text-sm text-muted-foreground mt-2">
+              Upload a video to analyze emotions
+            </p>
           </div>
-        </div>
-      )}
-      
-      {!isLoading && !error && (
-        <div className="camera-overlay pointer-events-none">
-          <div className="camera-guide" />
-        </div>
-      )}
+        )}
+
+        {isLoading && (
+          <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+            <div className="text-white text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-2" />
+              <p>Processing video...</p>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

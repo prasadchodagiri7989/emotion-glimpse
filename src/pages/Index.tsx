@@ -1,3 +1,4 @@
+
 import React, { useRef, useState, useEffect } from 'react';
 import { toast } from "sonner";
 import Header from '../components/Header';
@@ -13,17 +14,8 @@ const Index = () => {
   const [isModelLoading, setIsModelLoading] = useState(true);
   const [modelLoadError, setModelLoadError] = useState(false);
   const [emotionResult, setEmotionResult] = useState<EmotionResult | null>(null);
-  const [isDetecting, setIsDetecting] = useState(false);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [showSuspiciousDialog, setShowSuspiciousDialog] = useState(false);
-  const requestRef = useRef<number>();
-  const detectionActive = useRef<boolean>(false);
-  const streamRef = useRef<MediaStream | null>(null);
-
-  useEffect(() => {
-    if (emotionResult?.emotion === 'fearful') {
-      setShowSuspiciousDialog(true);
-    }
-  }, [emotionResult]);
 
   useEffect(() => {
     const initializeModels = async () => {
@@ -44,54 +36,60 @@ const Index = () => {
     };
 
     initializeModels();
-
-    return () => {
-      if (requestRef.current) {
-        cancelAnimationFrame(requestRef.current);
-      }
-      detectionActive.current = false;
-      
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach(track => track.stop());
-      }
-    };
   }, []);
 
-  const handleStreamReady = (stream: MediaStream) => {
-    streamRef.current = stream;
-    
-    if (!isModelLoading && !modelLoadError) {
-      startDetection();
-    }
-  };
+  const analyzeVideo = async (video: HTMLVideoElement) => {
+    if (!video || isModelLoading) return;
 
-  const startDetection = () => {
-    if (detectionActive.current) return;
+    setIsAnalyzing(true);
+    const emotionCounts: Record<string, number> = {};
     
-    setIsDetecting(true);
-    detectionActive.current = true;
-    detectLoop();
-  };
+    // Sample frames every 500ms during video duration
+    const duration = video.duration;
+    const interval = 0.5; // seconds
+    let currentTime = 0;
 
-  const detectLoop = async () => {
-    if (!detectionActive.current) return;
-    
-    if (videoRef.current && !isModelLoading) {
-      if (!videoRef.current.paused && !videoRef.current.ended && videoRef.current.readyState >= 2) {
-        try {
-          const result = await detectEmotion(videoRef.current);
-          if (result) {
-            setEmotionResult(result);
+    while (currentTime < duration) {
+      video.currentTime = currentTime;
+      
+      // Wait for the frame to be ready
+      await new Promise(resolve => {
+        video.onseeked = resolve;
+      });
+
+      try {
+        const result = await detectEmotion(video);
+        if (result) {
+          emotionCounts[result.emotion] = (emotionCounts[result.emotion] || 0) + 1;
+          
+          if (result.emotion === 'fearful') {
+            setShowSuspiciousDialog(true);
           }
-        } catch (error) {
-          console.error('Detection error:', error);
         }
+      } catch (error) {
+        console.error('Error analyzing frame:', error);
       }
+
+      currentTime += interval;
     }
-    
-    requestRef.current = requestAnimationFrame(() => {
-      setTimeout(detectLoop, 200);
+
+    // Find the most frequent emotion
+    let maxCount = 0;
+    let dominantEmotion: EmotionResult | null = null;
+
+    Object.entries(emotionCounts).forEach(([emotion, count]) => {
+      if (count > maxCount) {
+        maxCount = count;
+        dominantEmotion = {
+          emotion: emotion as EmotionResult['emotion'],
+          probability: count / (duration / interval)
+        };
+      }
     });
+
+    setEmotionResult(dominantEmotion);
+    setIsAnalyzing(false);
+    toast.success('Video analysis complete');
   };
 
   return (
@@ -108,15 +106,14 @@ const Index = () => {
           <div className="text-center mb-12 space-y-2 animate-blur-in">
             <div className="mb-3">
               <span className="text-xs bg-secondary px-3 py-1 rounded-full text-muted-foreground font-medium">
-                Real-time Analysis
+                Video Analysis
               </span>
             </div>
             <h1 className="text-3xl md:text-4xl font-medium tracking-tight mb-2 font-heading">
-              Recognize Emotions Instantly
+              Analyze Video Emotions
             </h1>
             <p className="text-muted-foreground text-sm sm:text-base max-w-xl mx-auto">
-              Our advanced technology captures and analyzes your facial expressions in real-time, providing 
-              instant feedback on your emotional state.
+              Upload a video to analyze emotions throughout its duration and determine the most prevalent emotion.
             </p>
           </div>
 
@@ -143,7 +140,15 @@ const Index = () => {
               </div>
             </div>
           ) : (
-            <Camera onStreamReady={handleStreamReady} videoRef={videoRef} />
+            <>
+              <Camera onVideoProcess={analyzeVideo} videoRef={videoRef} />
+              {isAnalyzing && (
+                <div className="mt-6 text-center">
+                  <Loader2 className="w-6 h-6 animate-spin inline-block mr-2" />
+                  <span>Analyzing video...</span>
+                </div>
+              )}
+            </>
           )}
 
           <div className="mt-12">
