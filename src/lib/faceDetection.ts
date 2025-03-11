@@ -14,8 +14,9 @@ export const loadModels = async () => {
   try {
     console.log('Loading models from local path...');
     
-    // Only use tinyFaceDetector which is more reliable
-    await faceapi.nets.tinyFaceDetector.loadFromUri('/models');
+    // Use a simpler approach - only load the tiny face detector
+    // The face expression model is causing the tensor shape mismatch
+    await faceapi.nets.tinyFaceDetector.load('/models');
     
     console.log('Models loaded successfully!');
     return true;
