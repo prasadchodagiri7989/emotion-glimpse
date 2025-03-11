@@ -1,3 +1,4 @@
+
 import React, { useRef, useState, useEffect } from 'react';
 import { toast } from "sonner";
 import Header from '../components/Header';
@@ -45,10 +46,10 @@ const TextEmotion = () => {
     setEmotionResult(null);
     const emotionCounts: Record<string, number> = {};
     
-    // Sample frames every 300ms during video duration
+    // Sample frames more frequently
     const duration = video.duration;
     console.log("Video duration:", duration);
-    const interval = 0.3; // seconds - shorter for more frames
+    const interval = 0.2; // seconds - shorter for more frames
     let currentTime = 0;
     let framesProcessed = 0;
     let detectedFrames = 0;
@@ -72,7 +73,7 @@ const TextEmotion = () => {
         });
 
         // Longer delay to ensure frame is fully rendered
-        await new Promise(r => setTimeout(r, 150));
+        await new Promise(r => setTimeout(r, 200));
         
         framesProcessed++;
         
@@ -94,10 +95,10 @@ const TextEmotion = () => {
       console.log("Analysis complete. Emotion counts:", emotionCounts);
       console.log(`Frames processed: ${framesProcessed}, Faces detected: ${detectedFrames}`);
       
-      // Ensure we have a result even if no emotions were detected
+      // Always provide a result, even if no emotions were detected
       if (Object.keys(emotionCounts).length === 0) {
         toast.warning('No faces detected in the video. Please try again with clearer face visibility.');
-        // Provide a default result for demonstration
+        // Provide a default result
         setEmotionResult({
           emotion: 'neutral',
           probability: 0.5
@@ -118,7 +119,10 @@ const TextEmotion = () => {
         });
 
         console.log("Dominant emotion:", dominantEmotion);
-        setEmotionResult(dominantEmotion);
+        setEmotionResult(dominantEmotion || {
+          emotion: 'neutral',
+          probability: 0.5
+        });
         
         if (dominantEmotion) {
           toast.success(`Analysis complete: Dominant emotion is ${dominantEmotion.emotion}`);
@@ -127,7 +131,7 @@ const TextEmotion = () => {
     } catch (error) {
       console.error('Error during video analysis:', error);
       toast.error('Failed to analyze video');
-      // Fallback to neutral emotion
+      // Always provide a fallback result
       setEmotionResult({
         emotion: 'neutral',
         probability: 0.5
