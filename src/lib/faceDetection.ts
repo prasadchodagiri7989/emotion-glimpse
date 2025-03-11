@@ -9,14 +9,17 @@ export interface EmotionResult {
   probability: number;
 }
 
-// Load only the face detector model to avoid shape mismatch errors
+// Load only the face detector model with explicit model location format
 export const loadModels = async () => {
   try {
     console.log('Loading models from local path...');
     
-    // Use a simpler approach - only load the tiny face detector
-    // The face expression model is causing the tensor shape mismatch
-    await faceapi.nets.tinyFaceDetector.load('/models');
+    // Clear any previous model caches to ensure clean loading
+    await faceapi.tf.engine().clear();
+    
+    // Use the loadFromUri method which handles path construction better
+    // and specifically mention we're only using the tinyFaceDetector
+    await faceapi.nets.tinyFaceDetector.loadFromUri('/models');
     
     console.log('Models loaded successfully!');
     return true;

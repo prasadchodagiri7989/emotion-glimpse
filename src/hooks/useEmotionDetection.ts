@@ -10,7 +10,12 @@ export const useEmotionDetection = () => {
   useEffect(() => {
     const initializeModels = async () => {
       setIsModelLoading(true);
+      setModelLoadError(false);
+      
       try {
+        // Add a small delay to ensure DOM is fully loaded
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
         const modelsLoaded = await loadModels();
         if (!modelsLoaded) {
           throw new Error('Failed to load models');

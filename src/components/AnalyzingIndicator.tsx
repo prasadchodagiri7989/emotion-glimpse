@@ -11,7 +11,7 @@ const AnalyzingIndicator: React.FC<AnalyzingIndicatorProps> = ({ isAnalyzing }) 
   
   return (
     <div className="mt-6 text-center">
-      <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 text-primary rounded-full">
+      <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 text-primary rounded-full animate-pulse">
         <Loader2 className="w-5 h-5 animate-spin" />
         <span>Analyzing video...</span>
       </div>
