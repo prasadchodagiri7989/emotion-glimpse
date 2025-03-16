@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -7,9 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 import Layout from '@/components/Layout';
 import TextEmotionDisplay from '@/components/TextEmotionDisplay';
 import SuspiciousCommand from '@/components/SuspiciousCommand';
-
-// Make sure to define Emotion type with all possible values including 'fearful'
-type Emotion = 'happy' | 'sad' | 'angry' | 'surprised' | 'fearful' | 'disgusted' | 'neutral';
+import { type Emotion } from '@/lib/faceDetection';
 
 interface EmotionResult {
   emotion: Emotion;
