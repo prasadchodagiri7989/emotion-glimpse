@@ -48,6 +48,7 @@ export const useInterviewAnalysis = ({
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const analysisIntervalRef = useRef<number | null>(null);
   const startTimeRef = useRef<number | null>(null);
+  const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const resetAnalysisData = () => {
     analysisData.current = {
@@ -143,7 +144,6 @@ export const useInterviewAnalysis = ({
         analysisData.current.faceDetectionCounts++;
         
         // Check if eyes are visible and looking at camera (rough estimation)
-        // This is a simplified approach - real eye contact detection would be more complex
         if (faceDetection.landmarks && 
             faceDetection.landmarks.getLeftEye() && 
             faceDetection.landmarks.getRightEye()) {
@@ -165,17 +165,7 @@ export const useInterviewAnalysis = ({
         }
       }
       
-      // Update time remaining
-      if (startTimeRef.current) {
-        const elapsed = Date.now() - startTimeRef.current;
-        const remaining = Math.max(0, Math.ceil((analysisDuration - elapsed) / 1000));
-        setTimeRemaining(remaining);
-        
-        // Check if analysis is complete
-        if (elapsed >= analysisDuration) {
-          completeAnalysis();
-        }
-      }
+      // Note: Time remaining is now updated in a separate interval
     } catch (error) {
       console.error('Error analyzing frame:', error);
     }
@@ -203,6 +193,21 @@ export const useInterviewAnalysis = ({
     // Set up frame analysis interval (approx 5 frames per second)
     analysisIntervalRef.current = window.setInterval(analyzeFrame, 200);
     
+    // Set up separate countdown interval (update every second)
+    countdownIntervalRef.current = setInterval(() => {
+      if (startTimeRef.current) {
+        const elapsed = Date.now() - startTimeRef.current;
+        const remaining = Math.max(0, Math.ceil((analysisDuration - elapsed) / 1000));
+        
+        setTimeRemaining(remaining);
+        
+        // Check if analysis is complete
+        if (remaining <= 0) {
+          completeAnalysis();
+        }
+      }
+    }, 300); // Update slightly faster than every second for smoother countdown
+    
     // Set up timer to ensure we finish even if some frames fail
     timerRef.current = setTimeout(() => {
       completeAnalysis();
@@ -221,6 +226,11 @@ export const useInterviewAnalysis = ({
     if (timerRef.current) {
       clearTimeout(timerRef.current);
       timerRef.current = null;
+    }
+    
+    if (countdownIntervalRef.current) {
+      clearInterval(countdownIntervalRef.current);
+      countdownIntervalRef.current = null;
     }
     
     // Calculate final metrics
@@ -249,6 +259,11 @@ export const useInterviewAnalysis = ({
       timerRef.current = null;
     }
     
+    if (countdownIntervalRef.current) {
+      clearInterval(countdownIntervalRef.current);
+      countdownIntervalRef.current = null;
+    }
+    
     // Reset state
     setIsAnalyzing(false);
     setMetrics(emptyInterviewMetrics);
@@ -266,6 +281,10 @@ export const useInterviewAnalysis = ({
       
       if (timerRef.current) {
         clearTimeout(timerRef.current);
+      }
+      
+      if (countdownIntervalRef.current) {
+        clearInterval(countdownIntervalRef.current);
       }
     };
   }, []);

@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -21,6 +21,15 @@ const InterviewAnalysis: React.FC<InterviewAnalysisProps> = ({
   onStartAnalysis,
   onResetAnalysis
 }) => {
+  const [displayTime, setDisplayTime] = useState(timeRemaining);
+  const [progressValue, setProgressValue] = useState(100);
+  
+  // Update the displayed time and progress when timeRemaining changes
+  useEffect(() => {
+    setDisplayTime(timeRemaining);
+    setProgressValue((timeRemaining / 10) * 100);
+  }, [timeRemaining]);
+  
   const getScoreColor = (score: number) => {
     if (score >= 80) return 'text-green-600';
     if (score >= 60) return 'text-yellow-600';
@@ -32,9 +41,6 @@ const InterviewAnalysis: React.FC<InterviewAnalysisProps> = ({
     if (score >= 60) return 'bg-yellow-600';
     return 'bg-red-600';
   };
-
-  // Calculate progress percentage for the timer
-  const timerProgress = isAnalyzing ? (timeRemaining / 10) * 100 : 0;
   
   return (
     <div className="w-full max-w-2xl mx-auto glass rounded-2xl animate-scale-in mt-6">
@@ -52,7 +58,7 @@ const InterviewAnalysis: React.FC<InterviewAnalysisProps> = ({
             {isAnalyzing ? (
               <div className="flex items-center gap-2 text-amber-600 font-medium">
                 <Clock className="h-4 w-4 animate-pulse" />
-                Analyzing... {timeRemaining} seconds remaining
+                Analyzing... {displayTime} seconds remaining
               </div>
             ) : metrics.overallScore > 0 ? (
               <div className="font-medium">
@@ -150,18 +156,18 @@ const InterviewAnalysis: React.FC<InterviewAnalysisProps> = ({
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
                 <span className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-sm font-bold text-blue-800">
-                  {timeRemaining}
+                  {displayTime}
                 </span>
               </div>
               <p className="text-center text-gray-600 mt-4 animate-pulse">
                 Please look at the camera naturally, as if in an interview...
               </p>
-              {/* Add timer progress bar */}
+              {/* Update timer progress bar to use progressValue */}
               <div className="w-full mt-4">
                 <Progress 
-                  value={timerProgress} 
+                  value={progressValue} 
                   className="h-1.5" 
-                  indicatorClassName="bg-blue-600 transition-all ease-linear duration-1000" 
+                  indicatorClassName="bg-blue-600 transition-all ease-linear duration-300" 
                 />
               </div>
             </div>
