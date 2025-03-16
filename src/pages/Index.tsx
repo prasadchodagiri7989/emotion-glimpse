@@ -1,12 +1,16 @@
+
 import React, { useRef, useState, useEffect } from 'react';
 import { toast } from "sonner";
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import Camera from '../components/Camera';
 import EmotionDisplay from '../components/EmotionDisplay';
+import InterviewAnalysis from '../components/InterviewAnalysis';
 import SuspiciousCommand from '../components/SuspiciousCommand';
 import { loadModels, detectEmotion, type EmotionResult } from '../lib/faceDetection';
-import { Loader2 } from 'lucide-react';
+import { useInterviewAnalysis } from '../hooks/useInterviewAnalysis';
+import { Loader2, Activity } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 const Index = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -15,9 +19,25 @@ const Index = () => {
   const [emotionResult, setEmotionResult] = useState<EmotionResult | null>(null);
   const [isDetecting, setIsDetecting] = useState(false);
   const [showSuspiciousDialog, setShowSuspiciousDialog] = useState(false);
+  const [showInterviewMode, setShowInterviewMode] = useState(false);
   const requestRef = useRef<number>();
   const detectionActive = useRef<boolean>(false);
   const streamRef = useRef<MediaStream | null>(null);
+
+  // Use our interview analysis hook
+  const { 
+    isAnalyzing, 
+    metrics,
+    timeRemaining,
+    startAnalysis,
+    resetAnalysis
+  } = useInterviewAnalysis({
+    videoRef,
+    analysisDuration: 10000, // 10 seconds
+    onAnalysisComplete: (results) => {
+      console.log('Interview analysis complete:', results);
+    }
+  });
 
   useEffect(() => {
     if (emotionResult?.emotion === 'fearful') {
@@ -74,7 +94,7 @@ const Index = () => {
   };
 
   const detectLoop = async () => {
-    if (!detectionActive.current) return;
+    if (!detectionActive.current || isAnalyzing) return;
     
     if (videoRef.current && !isModelLoading) {
       if (!videoRef.current.paused && !videoRef.current.ended && videoRef.current.readyState >= 2) {
@@ -94,6 +114,14 @@ const Index = () => {
     });
   };
 
+  const toggleInterviewMode = () => {
+    setShowInterviewMode(!showInterviewMode);
+    if (!showInterviewMode) {
+      // Reset analysis when entering interview mode
+      resetAnalysis();
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-background font-sans">
       <Header />
@@ -105,18 +133,29 @@ const Index = () => {
         />
         
         <section className="w-full max-w-6xl mx-auto">
-          <div className="text-center mb-12 space-y-2 animate-blur-in">
-            <div className="mb-3">
+          <div className="text-center mb-8 space-y-2 animate-blur-in">
+            <div className="mb-3 flex justify-center gap-2">
               <span className="text-xs bg-secondary px-3 py-1 rounded-full text-muted-foreground font-medium">
                 Real-time Analysis
               </span>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={toggleInterviewMode}
+                className="inline-flex items-center text-xs h-6 gap-1.5 border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100">
+                <Activity className="h-3 w-3" />
+                {showInterviewMode ? "Show Emotion Mode" : "Interview Mode"}
+              </Button>
             </div>
             <h1 className="text-3xl md:text-4xl font-medium tracking-tight mb-2 font-heading">
-              Recognize Emotions Instantly
+              {showInterviewMode 
+                ? "Interview Readiness Analyzer" 
+                : "Recognize Emotions Instantly"}
             </h1>
             <p className="text-muted-foreground text-sm sm:text-base max-w-xl mx-auto">
-              Our advanced technology captures and analyzes your facial expressions in real-time, providing 
-              instant feedback on your emotional state.
+              {showInterviewMode 
+                ? "Our AI will analyze your interview readiness by examining your facial expressions, eye contact, and confidence levels."
+                : "Our advanced technology captures and analyzes your facial expressions in real-time, providing instant feedback on your emotional state."}
             </p>
           </div>
 
@@ -146,8 +185,18 @@ const Index = () => {
             <Camera onStreamReady={handleStreamReady} videoRef={videoRef} />
           )}
 
-          <div className="mt-12">
-            <EmotionDisplay emotionResult={emotionResult} />
+          <div className="mt-8">
+            {showInterviewMode ? (
+              <InterviewAnalysis 
+                isAnalyzing={isAnalyzing}
+                metrics={metrics}
+                timeRemaining={timeRemaining}
+                onStartAnalysis={startAnalysis}
+                onResetAnalysis={resetAnalysis}
+              />
+            ) : (
+              <EmotionDisplay emotionResult={emotionResult} />
+            )}
           </div>
         </section>
       </main>
