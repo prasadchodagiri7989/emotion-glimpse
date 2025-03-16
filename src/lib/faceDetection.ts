@@ -9,17 +9,20 @@ export interface EmotionResult {
   probability: number;
 }
 
-// Load only the face detector model with explicit model location format
+// Initialize face-api models
 export const loadModels = async () => {
   try {
-    console.log('Loading models from local path...');
+    // Create CDN URLs for models
+    const tinyFaceDetectorModelUrl = 'https://justadudewhohacks.github.io/face-api.js/models/tiny_face_detector_model-weights_manifest.json';
+    const faceExpressionModelUrl = 'https://justadudewhohacks.github.io/face-api.js/models/face_expression_model-weights_manifest.json';
     
-    // Clear any previous model caches to ensure clean loading
-    await faceapi.tf.engine().clear();
+    console.log('Loading models from CDN...');
     
-    // Use the loadFromUri method which handles path construction better
-    // and specifically mention we're only using the tinyFaceDetector
-    await faceapi.nets.tinyFaceDetector.loadFromUri('/models');
+    // Load models from CDN instead of local files
+    await Promise.all([
+      faceapi.nets.tinyFaceDetector.loadFromUri(tinyFaceDetectorModelUrl.substring(0, tinyFaceDetectorModelUrl.lastIndexOf('/'))),
+      faceapi.nets.faceExpressionNet.loadFromUri(faceExpressionModelUrl.substring(0, faceExpressionModelUrl.lastIndexOf('/')))
+    ]);
     
     console.log('Models loaded successfully!');
     return true;
@@ -29,62 +32,61 @@ export const loadModels = async () => {
   }
 };
 
-// Generate a deterministic random number based on input value
-const seededRandom = (seed: number) => {
-  const x = Math.sin(seed) * 10000;
-  return x - Math.floor(x);
-};
-
-// Detect emotions from video element with a simpler approach
+// Detect emotions from video element
 export const detectEmotion = async (
   videoEl: HTMLVideoElement
 ): Promise<EmotionResult | null> => {
   if (!videoEl || videoEl.paused || videoEl.ended) return null;
 
   try {
-    // Use only the face detector (no expressions)
-    const options = new faceapi.TinyFaceDetectorOptions({ 
-      inputSize: 224, // Standard size for better performance
-      scoreThreshold: 0.3 // Balance between accuracy and sensitivity
-    });
-    
-    const detection = await faceapi.detectSingleFace(videoEl, options);
+    const detection = await faceapi
+      .detectSingleFace(videoEl, new faceapi.TinyFaceDetectorOptions())
+      .withFaceExpressions();
 
-    if (!detection) {
-      return null;
+    if (!detection) return null;
+
+    const expressions = detection.expressions;
+    
+    // Get the emotion with highest probability
+    let maxProbability = 0;
+    let dominantEmotion: Emotion = 'neutral';
+    
+    // Check each emotion and find the one with highest probability
+    if (expressions.happy > maxProbability) {
+      maxProbability = expressions.happy;
+      dominantEmotion = 'happy';
     }
-    
-    console.log("Face detected! Score:", detection.score);
-    
-    // Since we can't use the expression model, simulate emotions
-    // in a deterministic way based on properties of the detection
-    const emotions: Emotion[] = ['happy', 'sad', 'angry', 'surprised', 'fearful', 'disgusted', 'neutral'];
-    
-    // Use a combination of face position and detection score to determine emotion
-    // This ensures similar frames give similar emotions
-    const faceX = detection.box.x / videoEl.width;
-    const faceY = detection.box.y / videoEl.height;
-    const faceSize = (detection.box.width * detection.box.height) / (videoEl.width * videoEl.height);
-    
-    // Create a seed value from face position and size
-    const seed = (faceX * 13) + (faceY * 17) + (faceSize * 23) + (detection.score * 31);
-    const randomValue = seededRandom(seed);
-    
-    // Map the random value to an emotion index
-    const emotionIndex = Math.floor(randomValue * emotions.length);
-    const emotion = emotions[emotionIndex];
-    
+    if (expressions.sad > maxProbability) {
+      maxProbability = expressions.sad;
+      dominantEmotion = 'sad';
+    }
+    if (expressions.angry > maxProbability) {
+      maxProbability = expressions.angry;
+      dominantEmotion = 'angry';
+    }
+    if (expressions.fearful > maxProbability) {
+      maxProbability = expressions.fearful;
+      dominantEmotion = 'fearful';
+    }
+    if (expressions.disgusted > maxProbability) {
+      maxProbability = expressions.disgusted;
+      dominantEmotion = 'disgusted';
+    }
+    if (expressions.surprised > maxProbability) {
+      maxProbability = expressions.surprised;
+      dominantEmotion = 'surprised';
+    }
+    if (expressions.neutral > maxProbability) {
+      maxProbability = expressions.neutral;
+      dominantEmotion = 'neutral';
+    }
+
     return {
-      emotion: emotion,
-      probability: detection.score
+      emotion: dominantEmotion,
+      probability: maxProbability
     };
   } catch (error) {
     console.error('Error detecting emotions:', error);
-    
-    // Return a fallback emotion instead of null
-    return {
-      emotion: 'neutral',
-      probability: 0.5
-    };
+    return null;
   }
 };
