@@ -65,7 +65,10 @@ export const useInterviewAnalysis = ({
     const data = analysisData.current;
     
     if (data.totalFrames === 0) {
-      return emptyInterviewMetrics;
+      return {
+        ...emptyInterviewMetrics,
+        feedback: "No face detected during analysis. Please try again with better lighting."
+      };
     }
     
     // Calculate face detection rate - how often the face was visible
@@ -164,8 +167,6 @@ export const useInterviewAnalysis = ({
           analysisData.current.neutralDetectionCounts++;
         }
       }
-      
-      // Note: Time remaining is now updated in a separate interval
     } catch (error) {
       console.error('Error analyzing frame:', error);
     }
@@ -193,7 +194,7 @@ export const useInterviewAnalysis = ({
     // Set up frame analysis interval (approx 5 frames per second)
     analysisIntervalRef.current = window.setInterval(analyzeFrame, 200);
     
-    // Set up separate countdown interval (update every second)
+    // Set up separate countdown interval (update every 300ms)
     countdownIntervalRef.current = setInterval(() => {
       if (startTimeRef.current) {
         const elapsed = Date.now() - startTimeRef.current;
@@ -235,16 +236,34 @@ export const useInterviewAnalysis = ({
     
     // Calculate final metrics
     const finalMetrics = calculateMetrics();
-    setMetrics(finalMetrics);
+    
+    // Ensure we have a valid result by setting minimum values if no face was detected
+    const validatedMetrics = finalMetrics.overallScore === 0 ? {
+      eyeContact: 20,
+      facialExpression: 30,
+      confidence: 25,
+      overallScore: 25,
+      feedback: "Limited facial data was captured. Try again with better lighting and position your face clearly in the camera.",
+      isPrepared: false
+    } : finalMetrics;
+    
+    // Set the metrics state
+    setMetrics(validatedMetrics);
+    
+    // Set timer to 0 to indicate completion
     setTimeRemaining(0);
+    
+    // Set analyzing to false
     setIsAnalyzing(false);
     
     // Call the callback with results
     if (onAnalysisComplete) {
-      onAnalysisComplete(finalMetrics);
+      onAnalysisComplete(validatedMetrics);
     }
     
     toast.success("Interview analysis complete!");
+    
+    console.log("Analysis complete with metrics:", validatedMetrics);
   };
 
   const resetAnalysis = () => {

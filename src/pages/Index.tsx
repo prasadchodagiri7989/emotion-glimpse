@@ -35,7 +35,13 @@ const Index = () => {
     videoRef,
     analysisDuration: 10000, // 10 seconds
     onAnalysisComplete: (results) => {
-      console.log('Interview analysis complete:', results);
+      console.log('Interview analysis complete with results:', results);
+      // We'll display the results via the metrics state that's already passed to InterviewAnalysis
+      if (results.overallScore > 0) {
+        toast.success(`Analysis complete! Your score: ${results.overallScore}/100`);
+      } else {
+        toast.error("Analysis failed to produce valid results. Please try again.");
+      }
     }
   });
 
@@ -113,6 +119,20 @@ const Index = () => {
       setTimeout(detectLoop, 200);
     });
   };
+
+  // Pause normal emotion detection during interview analysis
+  useEffect(() => {
+    if (isAnalyzing) {
+      // Temporarily pause the regular emotion detection loop
+      if (requestRef.current) {
+        cancelAnimationFrame(requestRef.current);
+        requestRef.current = undefined;
+      }
+    } else if (detectionActive.current && !requestRef.current) {
+      // Resume emotion detection when analysis is complete
+      detectLoop();
+    }
+  }, [isAnalyzing]);
 
   const toggleInterviewMode = () => {
     setShowInterviewMode(!showInterviewMode);

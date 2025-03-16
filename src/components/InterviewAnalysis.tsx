@@ -23,12 +23,25 @@ const InterviewAnalysis: React.FC<InterviewAnalysisProps> = ({
 }) => {
   const [displayTime, setDisplayTime] = useState(timeRemaining);
   const [progressValue, setProgressValue] = useState(100);
+  const [hasCompleted, setHasCompleted] = useState(false);
   
   // Update the displayed time and progress when timeRemaining changes
   useEffect(() => {
     setDisplayTime(timeRemaining);
     setProgressValue((timeRemaining / 10) * 100);
-  }, [timeRemaining]);
+    
+    // Mark as completed when timer reaches 0 and we have results
+    if (timeRemaining === 0 && !isAnalyzing && metrics.overallScore > 0) {
+      setHasCompleted(true);
+    }
+  }, [timeRemaining, isAnalyzing, metrics.overallScore]);
+  
+  // Reset hasCompleted when starting a new analysis
+  useEffect(() => {
+    if (isAnalyzing) {
+      setHasCompleted(false);
+    }
+  }, [isAnalyzing]);
   
   const getScoreColor = (score: number) => {
     if (score >= 80) return 'text-green-600';
@@ -41,6 +54,8 @@ const InterviewAnalysis: React.FC<InterviewAnalysisProps> = ({
     if (score >= 60) return 'bg-yellow-600';
     return 'bg-red-600';
   };
+  
+  console.log("Analysis rendering with metrics:", metrics, "isAnalyzing:", isAnalyzing, "hasCompleted:", hasCompleted);
   
   return (
     <div className="w-full max-w-2xl mx-auto glass rounded-2xl animate-scale-in mt-6">
