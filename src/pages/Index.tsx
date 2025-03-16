@@ -1,4 +1,3 @@
-
 import React, { useRef, useState, useEffect } from 'react';
 import { toast } from "sonner";
 import Header from '../components/Header';
@@ -11,6 +10,7 @@ import { loadModels, detectEmotion, type EmotionResult } from '../lib/faceDetect
 import { useInterviewAnalysis } from '../hooks/useInterviewAnalysis';
 import { Loader2, Activity } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogAction } from '@/components/ui/alert-dialog';
 
 const Index = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -23,8 +23,8 @@ const Index = () => {
   const requestRef = useRef<number>();
   const detectionActive = useRef<boolean>(false);
   const streamRef = useRef<MediaStream | null>(null);
+  const [showResultDialog, setShowResultDialog] = useState(false);
 
-  // Use our interview analysis hook
   const { 
     isAnalyzing, 
     metrics,
@@ -36,8 +36,8 @@ const Index = () => {
     analysisDuration: 10000, // 10 seconds
     onAnalysisComplete: (results) => {
       console.log('Interview analysis complete with results:', results);
-      // We'll display the results via the metrics state that's already passed to InterviewAnalysis
       if (results.overallScore > 0) {
+        setShowResultDialog(true);
         toast.success(`Analysis complete! Your score: ${results.overallScore}/100`);
       } else {
         toast.error("Analysis failed to produce valid results. Please try again.");
@@ -120,16 +120,13 @@ const Index = () => {
     });
   };
 
-  // Pause normal emotion detection during interview analysis
   useEffect(() => {
     if (isAnalyzing) {
-      // Temporarily pause the regular emotion detection loop
       if (requestRef.current) {
         cancelAnimationFrame(requestRef.current);
         requestRef.current = undefined;
       }
     } else if (detectionActive.current && !requestRef.current) {
-      // Resume emotion detection when analysis is complete
       detectLoop();
     }
   }, [isAnalyzing]);
@@ -137,9 +134,12 @@ const Index = () => {
   const toggleInterviewMode = () => {
     setShowInterviewMode(!showInterviewMode);
     if (!showInterviewMode) {
-      // Reset analysis when entering interview mode
       resetAnalysis();
     }
+  };
+
+  const closeResultDialog = () => {
+    setShowResultDialog(false);
   };
 
   return (
@@ -151,6 +151,43 @@ const Index = () => {
           open={showSuspiciousDialog}
           onOpenChange={setShowSuspiciousDialog}
         />
+
+        <AlertDialog open={showResultDialog} onOpenChange={setShowResultDialog}>
+          <AlertDialogContent className="max-w-md">
+            <AlertDialogHeader>
+              <AlertDialogTitle className="text-xl flex items-center gap-2">
+                {metrics.isPrepared ? 
+                  <span className="text-green-600">You're Interview Ready!</span> : 
+                  <span className="text-amber-600">More Practice Needed</span>
+                }
+              </AlertDialogTitle>
+              <AlertDialogDescription className="text-base">
+                <div className="space-y-4 my-2">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="text-sm font-medium">Eye Contact:</div>
+                    <div className="text-right font-bold">{metrics.eyeContact}/100</div>
+                    
+                    <div className="text-sm font-medium">Facial Expression:</div>
+                    <div className="text-right font-bold">{metrics.facialExpression}/100</div>
+                    
+                    <div className="text-sm font-medium">Confidence:</div>
+                    <div className="text-right font-bold">{metrics.confidence}/100</div>
+                    
+                    <div className="text-sm font-medium border-t pt-1 mt-1">Overall Score:</div>
+                    <div className="text-right font-bold text-lg border-t pt-1 mt-1">{metrics.overallScore}/100</div>
+                  </div>
+                  
+                  <p className="text-sm pt-2">{metrics.feedback}</p>
+                </div>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogAction onClick={closeResultDialog}>
+                Close
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
         
         <section className="w-full max-w-6xl mx-auto">
           <div className="text-center mb-8 space-y-2 animate-blur-in">
