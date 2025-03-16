@@ -32,6 +32,9 @@ const InterviewAnalysis: React.FC<InterviewAnalysisProps> = ({
     if (score >= 60) return 'bg-yellow-600';
     return 'bg-red-600';
   };
+
+  // Calculate progress percentage for the timer
+  const timerProgress = isAnalyzing ? (timeRemaining / 10) * 100 : 0;
   
   return (
     <div className="w-full max-w-2xl mx-auto glass rounded-2xl animate-scale-in mt-6">
@@ -153,6 +156,14 @@ const InterviewAnalysis: React.FC<InterviewAnalysisProps> = ({
               <p className="text-center text-gray-600 mt-4 animate-pulse">
                 Please look at the camera naturally, as if in an interview...
               </p>
+              {/* Add timer progress bar */}
+              <div className="w-full mt-4">
+                <Progress 
+                  value={timerProgress} 
+                  className="h-1.5" 
+                  indicatorClassName="bg-blue-600 transition-all ease-linear duration-1000" 
+                />
+              </div>
             </div>
           )}
         </CardContent>
