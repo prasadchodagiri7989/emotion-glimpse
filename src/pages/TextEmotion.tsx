@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -8,9 +9,10 @@ import TextEmotionDisplay from '@/components/TextEmotionDisplay';
 import SuspiciousCommand from '@/components/SuspiciousCommand';
 import { type Emotion } from '@/lib/faceDetection';
 
+// Changed to match what TextEmotionDisplay expects
 interface EmotionResult {
   emotion: Emotion;
-  score: number;
+  probability: number;
 }
 
 const TextEmotion: React.FC = () => {
@@ -43,7 +45,7 @@ const TextEmotion: React.FC = () => {
       if (data && data.emotion && data.score !== undefined) {
         return {
           emotion: data.emotion as Emotion,
-          score: data.score,
+          probability: data.score, // Map score to probability
         };
       } else {
         console.error('Invalid response from the API:', data);
