@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 import { detectEmotion, detectFace, InterviewMetrics, emptyInterviewMetrics } from '../lib/faceDetection';
@@ -75,36 +74,26 @@ export const useInterviewAnalysis = ({
     const smileRate = data.smileDetectionCounts / data.totalFrames;
     const neutralRate = data.neutralDetectionCounts / data.totalFrames;
     
-    // Calculate eye contact score
     const eyeContactScore = Math.min(100, Math.round(faceDetectionRate * 100));
     
-    // Calculate facial expression score - happy expressions are weighted positively
-    let facialExpressionScore = 0;
-    const happyWeight = 0.7;
-    const neutralWeight = 0.3;
+    const expressionBalance = 0.7 * smileRate + 0.3 * neutralRate;
+    const facialExpressionScore = Math.min(100, Math.round(expressionBalance * 120));
     
-    // A good balance of smiling and neutral is considered optimal
-    const expressionBalance = happyWeight * smileRate + neutralWeight * neutralRate;
-    facialExpressionScore = Math.min(100, Math.round(expressionBalance * 120));
-    
-    // Calculate confidence score
     const confidenceScore = Math.min(100, Math.round((faceDetectionRate * 0.7 + smileRate * 0.3) * 110));
     
-    // Calculate overall score with the new metrics
     const overallScore = Math.round(
-      (eyeContactScore * 0.35) + 
+      (eyeContactScore * 0.3) + 
       (facialExpressionScore * 0.4) + 
-      (confidenceScore * 0.25)
+      (confidenceScore * 0.3)
     );
     
     const isPrepared = overallScore >= 70;
     
-    // Generate feedback
     let feedback = "";
     if (overallScore >= 85) {
-      feedback = "Excellent! You appear very confident and well-prepared.";
+      feedback = "Excellent! You appear very well-prepared for your interview.";
     } else if (overallScore >= 70) {
-      feedback = "Good job! You show confidence, but there's room for improvement.";
+      feedback = "Good job! You seem prepared, but there's room for improvement.";
     } else if (overallScore >= 50) {
       feedback = "You need some more practice. Try to maintain better eye contact and show more confidence.";
     } else {
@@ -112,15 +101,13 @@ export const useInterviewAnalysis = ({
     }
     
     if (eyeContactScore < 60) {
-      feedback += " Try to maintain more consistent eye contact with the camera.";
+      feedback += " Try to maintain more consistent eye contact.";
     }
-    
     if (facialExpressionScore < 60) {
       feedback += " Your facial expressions could be more engaging - smile naturally when appropriate.";
     }
-    
     if (confidenceScore < 60) {
-      feedback += " Work on appearing more confident during video interviews.";
+      feedback += " Work on appearing more confident during the interview.";
     }
     
     return {
@@ -183,7 +170,7 @@ export const useInterviewAnalysis = ({
     setIsAnalyzing(true);
     startTimeRef.current = Date.now();
     
-    toast.info(`Analysis started. Please look at the camera for ${Math.ceil(analysisDuration / 1000)} seconds.`);
+    toast.info(`Interview analysis started. Please look at the camera for ${Math.ceil(analysisDuration / 1000)} seconds.`);
     
     analysisIntervalRef.current = window.setInterval(analyzeFrame, 200);
     
@@ -225,12 +212,11 @@ export const useInterviewAnalysis = ({
     
     const finalMetrics = calculateMetrics();
     
-    // Ensure we have valid metrics even with limited face detection
     const validatedMetrics = finalMetrics.overallScore === 0 ? {
-      eyeContact: 30,
-      facialExpression: 40,
-      confidence: 35,
-      overallScore: 35,
+      eyeContact: 20,
+      facialExpression: 30,
+      confidence: 25,
+      overallScore: 25,
       feedback: "Limited facial data was captured. Try again with better lighting and position your face clearly in the camera.",
       isPrepared: false
     } : finalMetrics;
@@ -240,12 +226,13 @@ export const useInterviewAnalysis = ({
     setIsAnalyzing(false);
     
     if (onAnalysisComplete) {
-      onAnalysisComplete(validatedMetrics);
+      setTimeout(() => {
+        onAnalysisComplete(validatedMetrics);
+      }, 500);
     }
     
-    toast.success("Analysis complete!");
+    toast.success("Interview analysis complete!");
     
-    console.log("Analysis complete with data:", analysisData.current);
     console.log("Analysis complete with metrics:", validatedMetrics);
   };
 
