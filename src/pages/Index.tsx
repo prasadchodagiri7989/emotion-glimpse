@@ -2,15 +2,17 @@ import React, { useRef, useState, useEffect } from 'react';
 import { toast } from "sonner";
 import Header from '../components/Header';
 import Footer from '../components/Footer';
-import Camera from '../components/Camera';
-import EmotionDisplay from '../components/EmotionDisplay';
-import InterviewAnalysis from '../components/InterviewAnalysis';
-import SuspiciousCommand from '../components/SuspiciousCommand';
+
 import { loadModels, detectEmotion, type EmotionResult } from '../lib/faceDetection';
 import { useInterviewAnalysis } from '../hooks/useInterviewAnalysis';
-import { Loader2, Activity } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogAction } from '@/components/ui/alert-dialog';
+
+import VideoUploader from '@/components/VideoUploader';
+import ProcessingAnimation from '@/components/ProcessingAnimation';
+import ScoreDisplay from '@/components/ScoreDisplay';
+import { analyzeInterviewVideo } from '@/utils/scoreUtils';
+import { ScoreMetric } from '@/components/ScoreCard';
+import { Video } from 'lucide-react';
+
 
 const Index = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -24,6 +26,50 @@ const Index = () => {
   const detectionActive = useRef<boolean>(false);
   const streamRef = useRef<MediaStream | null>(null);
   const [showResultDialog, setShowResultDialog] = useState(false);
+
+
+
+
+
+
+
+  const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [scoreResult, setScoreResult] = useState<{
+    overallScore: number;
+    metrics: ScoreMetric[];
+  } | null>(null);
+
+  const handleVideoSelected = async (file: File) => {
+    setVideoFile(file);
+    setScoreResult(null);
+    setIsProcessing(true);
+    
+    try {
+      const result = await analyzeInterviewVideo(file);
+      setScoreResult(result);
+    } catch (error) {
+      console.error('Error processing video:', error);
+      // In a real app, you would handle this error properly
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleReset = () => {
+    setVideoFile(null);
+    setScoreResult(null);
+    setIsProcessing(false);
+  };
+
+
+
+
+
+
+
+
+
 
   const { 
     isAnalyzing, 
@@ -146,116 +192,68 @@ const Index = () => {
     <div className="min-h-screen flex flex-col bg-background font-sans">
       <Header />
       
-      <main className="flex-1 flex flex-col items-center justify-center py-10 px-4 sm:px-6">
-        <SuspiciousCommand 
-          open={showSuspiciousDialog}
-          onOpenChange={setShowSuspiciousDialog}
-        />
-
-        <AlertDialog open={showResultDialog} onOpenChange={setShowResultDialog}>
-          <AlertDialogContent className="max-w-md">
-            <AlertDialogHeader>
-              <AlertDialogTitle className="text-xl flex items-center gap-2">
-                {metrics.isPrepared ? 
-                  <span className="text-green-600">You're Interview Ready!</span> : 
-                  <span className="text-amber-600">More Practice Needed</span>
+      <main className="container mx-auto py-8 px-4 sm:px-6 max-w-5xl">
+        {!videoFile ? (
+          <div className="space-y-8 animate-fade-in">
+            <div className="text-center max-w-2xl mx-auto mb-12">
+              <div className="inline-flex items-center px-3 py-1 rounded-full bg-accent text-xs font-medium text-accent-foreground mb-4">
+                AI-Powered Analysis
+              </div>
+              <h2 className="text-4xl font-bold mb-4 tracking-tight">
+                Elevate Your Interview Performance
+              </h2>
+              <p className="text-lg text-muted-foreground">
+                Upload your interview video and receive instant, detailed feedback to help you improve your skills and ace your next interview.
+              </p>
+            </div>
+            
+            <VideoUploader onVideoSelected={handleVideoSelected} />
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
+              {[
+                {
+                  title: "Upload",
+                  description: "Share your interview recording for AI analysis"
+                },
+                {
+                  title: "Analyze",
+                  description: "Our system evaluates multiple performance factors"
+                },
+                {
+                  title: "Improve",
+                  description: "Get actionable insights to enhance your skills"
                 }
-              </AlertDialogTitle>
-              <AlertDialogDescription className="text-base">
-                <div className="space-y-4 my-2">
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="text-sm font-medium">Eye Contact:</div>
-                    <div className="text-right font-bold">{metrics.eyeContact}/100</div>
-                    
-                    <div className="text-sm font-medium">Facial Expression:</div>
-                    <div className="text-right font-bold">{metrics.facialExpression}/100</div>
-                    
-                    <div className="text-sm font-medium">Confidence:</div>
-                    <div className="text-right font-bold">{metrics.confidence}/100</div>
-                    
-                    <div className="text-sm font-medium border-t pt-1 mt-1">Overall Score:</div>
-                    <div className="text-right font-bold text-lg border-t pt-1 mt-1">{metrics.overallScore}/100</div>
-                  </div>
-                  
-                  <p className="text-sm pt-2">{metrics.feedback}</p>
-                </div>
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogAction onClick={closeResultDialog}>
-                Close
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-        
-        <section className="w-full max-w-6xl mx-auto">
-          <div className="text-center mb-8 space-y-2 animate-blur-in">
-            <div className="mb-3 flex justify-center gap-2">
-              <span className="text-xs bg-secondary px-3 py-1 rounded-full text-muted-foreground font-medium">
-                Real-time Analysis
-              </span>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={toggleInterviewMode}
-                className="inline-flex items-center text-xs h-6 gap-1.5 border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100">
-                <Activity className="h-3 w-3" />
-                {showInterviewMode ? "Show Emotion Mode" : "Interview Mode"}
-              </Button>
-            </div>
-            <h1 className="text-3xl md:text-4xl font-medium tracking-tight mb-2 font-heading">
-              {showInterviewMode 
-                ? "Interview Readiness Analyzer" 
-                : "Recognize Emotions Instantly"}
-            </h1>
-            <p className="text-muted-foreground text-sm sm:text-base max-w-xl mx-auto">
-              {showInterviewMode 
-                ? "Our AI will analyze your interview readiness by examining your facial expressions, eye contact, and confidence levels."
-                : "Our advanced technology captures and analyzes your facial expressions in real-time, providing instant feedback on your emotional state."}
-            </p>
-          </div>
-
-          {isModelLoading ? (
-            <div className="w-full max-w-3xl aspect-video mx-auto bg-black/5 rounded-2xl flex items-center justify-center">
-              <div className="text-center animate-pulse">
-                <Loader2 className="w-10 h-10 mb-3 mx-auto animate-spin text-muted-foreground" />
-                <p className="text-sm text-muted-foreground">Loading emotion detection models...</p>
-              </div>
-            </div>
-          ) : modelLoadError ? (
-            <div className="w-full max-w-3xl aspect-video mx-auto bg-black/5 rounded-2xl flex items-center justify-center">
-              <div className="text-center p-6">
-                <p className="text-lg font-medium font-heading mb-2">Failed to load emotion detection models</p>
-                <p className="text-sm text-muted-foreground mb-4">
-                  There was an error initializing the face detection models.
-                </p>
-                <button 
-                  className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
-                  onClick={() => window.location.reload()}
+              ].map((step, i) => (
+                <div 
+                  key={i} 
+                  className="border border-border rounded-xl p-6 text-center hover:border-primary/40 hover:shadow-sm transition-all"
+                  style={{ animationDelay: `${i * 0.1}s` }}
                 >
-                  Reload
-                </button>
-              </div>
+                  <div className="inline-flex items-center justify-center h-10 w-10 rounded-full bg-primary/10 text-primary mb-4">
+                    {i + 1}
+                  </div>
+                  <h3 className="text-lg font-medium mb-2">{step.title}</h3>
+                  <p className="text-muted-foreground">{step.description}</p>
+                </div>
+              ))}
             </div>
-          ) : (
-            <Camera onStreamReady={handleStreamReady} videoRef={videoRef} />
-          )}
-
-          <div className="mt-8">
-            {showInterviewMode ? (
-              <InterviewAnalysis 
-                isAnalyzing={isAnalyzing}
-                metrics={metrics}
-                timeRemaining={timeRemaining}
-                onStartAnalysis={startAnalysis}
-                onResetAnalysis={resetAnalysis}
+          </div>
+        ) : (
+          <div className="space-y-8">
+            {isProcessing ? (
+              <ProcessingAnimation isProcessing={isProcessing} />
+            ) : scoreResult ? (
+              <ScoreDisplay 
+                overallScore={scoreResult.overallScore} 
+                metrics={scoreResult.metrics} 
               />
             ) : (
-              <EmotionDisplay emotionResult={emotionResult} />
+              <div className="text-center py-12">
+                <p>Something went wrong. Please try again.</p>
+              </div>
             )}
           </div>
-        </section>
+        )}
       </main>
       
       <Footer />
