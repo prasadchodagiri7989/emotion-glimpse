@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { Link } from 'react-router-dom';
 
 const Footer: React.FC = () => {
   return (
@@ -9,9 +10,15 @@ const Footer: React.FC = () => {
           © {new Date().getFullYear()} EmotionDetection. All rights reserved.
         </p>
         <div className="flex items-center space-x-6">
-          <a href="#" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
-            Teams
-          </a>
+          <Link to="/" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+            Visual
+          </Link>
+          <Link to="/audio-emotion" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+            Audio
+          </Link>
+          <Link to="/text-emotion" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+            Text
+          </Link>
           <a href="#" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
             About
           </a>

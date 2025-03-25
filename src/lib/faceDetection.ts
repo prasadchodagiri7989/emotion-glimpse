@@ -18,6 +18,13 @@ export const loadModels = async () => {
     
     console.log('Loading models from CDN...');
     
+    // Try to dispose any existing models to avoid conflicts
+    try {
+      faceapi.tf.dispose();
+    } catch (e) {
+      console.log('No TensorFlow models to dispose');
+    }
+    
     // Load models from CDN instead of local files
     await Promise.all([
       faceapi.nets.tinyFaceDetector.loadFromUri(tinyFaceDetectorModelUrl.substring(0, tinyFaceDetectorModelUrl.lastIndexOf('/'))),
@@ -89,4 +96,42 @@ export const detectEmotion = async (
     console.error('Error detecting emotions:', error);
     return null;
   }
+};
+
+// Get face detection data with landmarks for interview analysis
+export const detectFace = async (
+  videoEl: HTMLVideoElement
+): Promise<faceapi.WithFaceLandmarks<faceapi.WithFaceDetection<{}>> | null> => {
+  if (!videoEl || videoEl.paused || videoEl.ended) return null;
+
+  try {
+    const detection = await faceapi
+      .detectSingleFace(videoEl, new faceapi.TinyFaceDetectorOptions())
+      .withFaceLandmarks();
+      
+    return detection || null;
+  } catch (error) {
+    console.error('Error detecting face:', error);
+    return null;
+  }
+};
+
+// Interview analysis metrics
+export interface InterviewMetrics {
+  eyeContact: number;     // 0-100 score
+  facialExpression: number; // 0-100 score
+  confidence: number;     // 0-100 score
+  overallScore: number;   // 0-100 score
+  feedback: string;       // Text feedback
+  isPrepared: boolean;    // Final assessment
+}
+
+// Default/empty metrics
+export const emptyInterviewMetrics: InterviewMetrics = {
+  eyeContact: 0,
+  facialExpression: 0,
+  confidence: 0,
+  overallScore: 0,
+  feedback: "Waiting for analysis...",
+  isPrepared: false
 };
